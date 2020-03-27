@@ -1,11 +1,10 @@
-package com.example.demo;
+package serverless.service;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
 
@@ -14,32 +13,34 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
+import serverless.pojo.Person;
+
 @Service
 public class DynamoDBService {
 
-    private DynamoDB dynamoDb;
-    private final String DYNAMODB_TABLE_NAME = "dynamo-table";
+    private final String DYNAMODB_TABLE_NAME = "STV-Lamdba-Demo-Person";
     private final Regions REGION = Regions.AP_NORTHEAST_1;
+    private DynamoDB dynamoDb;
 
     public Message<String> operatingDynamoDB(Message<Person> inputMessage) {
-
+        // init
         this.initDynamoDbClient();
-        String responseMessage = "";
-
+        
+        JSONObject responseJson = new JSONObject();
         try {
-            Person person = (Person) inputMessage.getPayload();
-            // System.out.println("payload person: " + person.toString());
             JSONObject responseBody = new JSONObject();
-            
-            if (person != null) {
 
-                Table table = dynamoDb.getTable(DYNAMODB_TABLE_NAME);
-
+            if (inputMessage != null && inputMessage.getPayload() != null) {
+                // Generate document
+                final Person person = (Person) inputMessage.getPayload();
+                // database access
+                final Table table = dynamoDb.getTable(DYNAMODB_TABLE_NAME);
                 if (table != null) {
-                    PutItemOutcome result = table.putItem(
+                    table.putItem(
                         new PutItemSpec().withItem(new Item()
-                            .withNumber("id", person.getId())
-                            .withString("name", person.getName())));
+                            .withNumber("id", Integer.valueOf(person.getId()))
+                            .withString("name", person.getName())
+                            .withString("email", person.getEmail())));
                     responseBody.put("message", person.toString());
                 } else {
                     responseBody.put("message", "Requested resource not found");
@@ -47,13 +48,15 @@ public class DynamoDBService {
             } else {
                 responseBody.put("message", "No data received");
             }
-            responseMessage = new JSONObject(responseBody).toString();
+            responseJson.put("statusCode", 200);
+            responseJson.put("body", responseBody.toString());
 
         } catch (Exception e) {
-            e.printStackTrace();
+            responseJson.put("statusCode", 400);
+            responseJson.put("exception", e);
         }
 
-        return MessageBuilder.withPayload(responseMessage).build();
+        return MessageBuilder.withPayload(responseJson.toString()).build();
     }
 
     private void initDynamoDbClient() {

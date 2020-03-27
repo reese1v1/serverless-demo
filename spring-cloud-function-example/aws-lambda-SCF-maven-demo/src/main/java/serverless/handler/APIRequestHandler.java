@@ -1,4 +1,4 @@
-package com.example.demo;
+package serverless.handler;
 
 import org.springframework.cloud.function.adapter.aws.SpringBootApiGatewayRequestHandler;
 

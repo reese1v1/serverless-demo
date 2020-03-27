@@ -1,10 +1,13 @@
-package com.example.demo;
+package serverless.function;
 
 import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
+
+import serverless.pojo.Person;
+import serverless.service.DynamoDBService;
 
 @Component("dynamoDBFunction")
 public class DynamoDBFunction implements Function<Message<Person>, Message<String>> {
